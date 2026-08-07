@@ -56,6 +56,13 @@ const translations = {
     sort_new: 'По новизне',
     sort_price_asc: 'Цена: по возрастанию',
     sort_price_desc: 'Цена: по убыванию',
+    bnav_home: 'Главная',
+    bnav_catalog: 'Каталог',
+    bnav_search: 'Поиск',
+    bnav_cart: 'Корзина',
+    search_placeholder: 'Поиск по товарам…',
+    search_no_results: 'Ничего не найдено',
+    search_popular: 'Популярное сейчас',
   },
   uz: {
     nav_catalog: 'KATALOG',
@@ -112,6 +119,13 @@ const translations = {
     sort_new: 'Yangi',
     sort_price_asc: "Narx: o'sish bo'yicha",
     sort_price_desc: "Narx: kamayish bo'yicha",
+    bnav_home: 'Bosh sahifa',
+    bnav_catalog: 'Katalog',
+    bnav_search: 'Qidiruv',
+    bnav_cart: 'Savat',
+    search_placeholder: "Mahsulotlar bo'yicha qidirish…",
+    search_no_results: 'Hech narsa topilmadi',
+    search_popular: 'Ommabop hozir',
   },
 };
 

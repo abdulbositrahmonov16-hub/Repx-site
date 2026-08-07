@@ -241,8 +241,8 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Sticky mobile CTA */}
-      <div className="md:hidden fixed bottom-4 inset-x-4 z-40">
+      {/* Sticky mobile CTA (above BottomNav) */}
+      <div className="md:hidden fixed bottom-[calc(68px+env(safe-area-inset-bottom))] inset-x-4 z-40">
         <motion.button
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

@@ -132,8 +132,8 @@ const Catalog = () => {
         </div>
       </section>
 
-      {/* Sticky filter bar */}
-      <div className="sticky top-16 md:top-20 z-20 bg-white/80 backdrop-blur-xl border-b border-black/[0.06]">
+      {/* Filter bar — sticky on desktop only (mobile scrolls with content) */}
+      <div className="md:sticky md:top-20 md:z-20 bg-white md:bg-white/80 md:backdrop-blur-xl md:border-b md:border-black/[0.06]">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex flex-wrap items-center gap-3 md:gap-4 justify-between">
             {/* Category pills */}
