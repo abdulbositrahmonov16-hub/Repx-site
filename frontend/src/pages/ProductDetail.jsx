@@ -160,6 +160,26 @@ const ProductDetail = () => {
               </p>
             </div>
 
+            {product.status === 'pre-order' && (
+              <div
+                data-testid="preorder-notice"
+                className="mb-6 flex items-start gap-3 rounded-xl border border-[#BFA982]/40 bg-[#FBF6EC] px-4 py-3"
+              >
+                <div className="mt-0.5 w-8 h-8 rounded-full bg-[#BFA982] text-black grid place-items-center shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="3" width="15" height="13" />
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                    <circle cx="5.5" cy="18.5" r="2.5" />
+                    <circle cx="18.5" cy="18.5" r="2.5" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-[#8A7548] mb-0.5">{t('badge_pre')}</div>
+                  <div className="text-sm text-black">{t('preorder_delivery')}</div>
+                </div>
+              </div>
+            )}
+
             {/* Color selector */}
             {hasColors && (
               <div className="mb-8">

@@ -17,7 +17,7 @@ if not BASE_URL:
     BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 
 API = f"{BASE_URL}/api"
-ADMIN_PASSWORD = "Abdul_19"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin")
 
 
 @pytest.fixture(scope="module")
@@ -203,3 +203,64 @@ def test_upload_rejects_non_image(session, auth_headers):
     files = {"file": ("bad.txt", io.BytesIO(b"hello"), "text/plain")}
     r = session.post(f"{API}/upload", files=files, headers=auth_headers)
     assert r.status_code == 400
+
+
+
+# ------------- Settings (telegram_username + home_categories) -------------
+def test_get_settings_public(session):
+    r = session.get(f"{API}/settings")
+    assert r.status_code == 200
+    data = r.json()
+    assert "telegram_username" in data
+    assert "home_categories" in data
+    assert isinstance(data["home_categories"], dict)
+
+
+def test_put_settings_requires_auth(session):
+    r = session.put(f"{API}/settings", json={"telegram_username": "hacker"})
+    assert r.status_code == 401
+
+
+def test_put_settings_home_categories(session, auth_headers):
+    payload = {"home_categories": {
+        "sneakers": "https://example.com/sneak.jpg",
+        "tshirts": "https://example.com/ts.jpg",
+        "crossfit": "https://example.com/cf.jpg",
+    }}
+    r = session.put(f"{API}/settings", json=payload, headers=auth_headers)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["home_categories"]["sneakers"] == "https://example.com/sneak.jpg"
+    assert data["home_categories"]["tshirts"] == "https://example.com/ts.jpg"
+    assert data["home_categories"]["crossfit"] == "https://example.com/cf.jpg"
+
+    # Verify persisted via public GET
+    r2 = session.get(f"{API}/settings")
+    assert r2.status_code == 200
+    d2 = r2.json()
+    assert d2["home_categories"]["sneakers"] == "https://example.com/sneak.jpg"
+
+
+def test_put_settings_telegram_strips_at(session, auth_headers):
+    r = session.put(f"{API}/settings", json={"telegram_username": "@wmexxa"}, headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json()["telegram_username"] == "wmexxa"
+
+
+# ------------- Pre-order products -------------
+def test_preorder_product_4(session):
+    r = session.get(f"{API}/products/4")
+    assert r.status_code == 200
+    assert r.json()["status"] == "pre-order"
+
+
+def test_preorder_product_10(session):
+    r = session.get(f"{API}/products/10")
+    assert r.status_code == 200
+    assert r.json()["status"] == "pre-order"
+
+
+def test_available_product_1(session):
+    r = session.get(f"{API}/products/1")
+    assert r.status_code == 200
+    assert r.json()["status"] == "available"

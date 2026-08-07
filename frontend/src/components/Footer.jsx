@@ -1,7 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Send } from 'lucide-react';
+import { fetchSettings } from '../utils/settings';
+import { useLang } from '../context/LanguageContext';
 
 const Footer = () => {
+  const [tgUsername, setTgUsername] = useState('');
+  const { t } = useLang();
+
+  useEffect(() => {
+    let active = true;
+    fetchSettings()
+      .then((s) => active && setTgUsername(s.telegram_username || ''))
+      .catch(() => {});
+    const onUpdate = () => {
+      fetchSettings()
+        .then((s) => setTgUsername(s.telegram_username || ''))
+        .catch(() => {});
+    };
+    window.addEventListener('settingsUpdate', onUpdate);
+    return () => {
+      active = false;
+      window.removeEventListener('settingsUpdate', onUpdate);
+    };
+  }, []);
+
+  const tgHandle = (tgUsername || 'wmexxa').replace(/^@/, '');
+  const tgUrl = `https://t.me/${tgHandle}`;
+
   return (
     <footer className="bg-black text-white py-16">
       <div className="max-w-7xl mx-auto px-6">
@@ -44,9 +70,8 @@ const Footer = () => {
               transition={{ delay: 0.1 }}
               className="flex flex-col gap-2 text-sm text-white/60"
             >
-              <a href="/catalog" className="hover:text-[#BFA982] transition-colors">
-                Каталог
-              </a>
+              <a href="/" className="hover:text-[#BFA982] transition-colors">Главная</a>
+              <a href="/catalog" className="hover:text-[#BFA982] transition-colors">Каталог</a>
             </motion.div>
           </div>
 
@@ -70,10 +95,23 @@ const Footer = () => {
               <p>repx.uz</p>
               <p>Узбекистан, Ташкент</p>
 
+              {/* Primary contact CTA */}
+              <a
+                href={tgUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="contact-admin-btn"
+                className="mt-2 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#BFA982] text-black font-semibold tracking-wide hover:bg-[#A8906A] transition-colors"
+              >
+                <Send className="w-4 h-4" />
+                {t('contact_admin')}
+                <span className="text-black/70 text-xs">@{tgHandle}</span>
+              </a>
+
               {/* Social links */}
               <div className="flex gap-3 mt-2">
                 <a
-                  href="https://t.me/repx_uz"
+                  href={tgUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Telegram"

@@ -1,0 +1,54 @@
+{
+  "summary": "Full backend + frontend E2E validation of RepX changes: /api/settings (telegram_username + home_categories), pre-order UX on /catalog and /product/:id, Footer contact-admin-btn, and AdminPanel home-images section. 22/23 backend tests pass (only Cloudinary upload fails, expected due to demo/demo/demo creds per agent note). All 6 frontend flows pass.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/upload", "issue": "Returns 502 because CLOUDINARY_* env vars set to demo/demo/demo. UI wiring is correct; only the actual Cloudinary call fails. Expected per main-agent context note."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "GET /api/products (10 seeded)": "PASS",
+    "GET /api/products/4 status=pre-order": "PASS",
+    "GET /api/products/10 status=pre-order": "PASS",
+    "GET /api/products/1 status=available": "PASS",
+    "GET /api/settings returns telegram_username+home_categories": "PASS",
+    "PUT /api/settings without token": "PASS (401)",
+    "PUT /api/settings home_categories persisted": "PASS (roundtrip via public GET)",
+    "PUT /api/settings @ stripped": "PASS",
+    "Catalog page (/catalog)": "PASS - 10 product cards, no errors",
+    "Catalog pre-order '6-8 дней' badges": "PASS - 2 matches (products 4 & 10)",
+    "/product/4 preorder-notice visible": "PASS - text: 'ПОД ЗАКАЗТовар придёт в течении 6–8 дней'",
+    "/product/1 preorder-notice absent": "PASS",
+    "Footer contact-admin-btn": "PASS - href=https://t.me/wmexxa, text contains '@wmexxa'",
+    "Admin login (password=admin)": "PASS",
+    "Admin admin-home-images section visible": "PASS",
+    "Admin uploaders sneakers/tshirts/crossfit present": "PASS (all 3)",
+    "Admin save-home-images button present": "PASS",
+    "E2E: PUT home_categories -> Home bg update": "PASS - all 3 inline background-image URLs matched posted URLs after reload"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_repx_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py Cloudinary is initialized at import-time with demo/demo/demo when env is not real -- OK for dev but /api/upload will always 502. Consider guarding /api/upload behind a healthcheck or returning a clearer error message.",
+    "PUT /api/settings silently ignores non-string values in home_categories map (comprehension filter). This is fine but no validation error is returned; consider Pydantic-level validation.",
+    "AdminPanel: uploads to Cloudinary through /api/upload require valid creds; in dev the upload button will always error. Add a UI-visible error toast on 502 (currently likely silent)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_repx_backend.py (added settings + pre-order tests; ADMIN_PASSWORD now sourced from env)"
+  ],
+  "success_rate": {"backend": "96% (22/23)", "frontend": "100%"},
+  "test_credentials": "Admin password: admin (backend/.env ADMIN_PASSWORD)",
+  "seed_data_creation": "None. Used existing 10 seeded products. During E2E, temporarily set then reset home_categories via PUT /api/settings.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All requested features working. Cloudinary upload failure is env-related (demo creds), not a code bug. When testing image upload E2E in future, either set real Cloudinary env vars or bypass /api/upload and PUT home_categories directly (as this iteration did).",
+  "rca of the issue": "No new issues. Prior transient 404 on /catalog was a backend restart timing issue; Catalog.jsx now retries x2 (800ms/1600ms), which was validated indirectly (10 cards loaded reliably on both fresh loads)."
+}

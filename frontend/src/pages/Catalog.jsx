@@ -27,15 +27,22 @@ const Catalog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadProducts = async () => {
+  const loadProducts = async (attempt = 0) => {
     setLoading(true);
-    setError('');
+    if (attempt === 0) setError('');
     try {
       setAllProducts(await fetchProducts());
+      setError('');
     } catch (e) {
+      // Backend may be booting after a redeploy — retry a couple of times
+      // before showing the error UI.
+      if (attempt < 2) {
+        setTimeout(() => loadProducts(attempt + 1), 800 * (attempt + 1));
+        return;
+      }
       setError(apiError(e));
     } finally {
-      setLoading(false);
+      if (attempt === 0 || attempt >= 2) setLoading(false);
     }
   };
 
@@ -264,7 +271,7 @@ const Catalog = () => {
                   />
 
                   {/* Status pill — thin outline, no gold fill */}
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                     <span
                       className={`inline-block px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border backdrop-blur-md ${
                         product.status === 'available'
@@ -274,6 +281,11 @@ const Catalog = () => {
                     >
                       {product.status === 'available' ? t('badge_in') : t('badge_pre')}
                     </span>
+                    {product.status === 'pre-order' && (
+                      <span className="inline-block px-2 py-0.5 text-[9px] tracking-wide font-medium text-white bg-[#8A7548] rounded-sm">
+                        6–8 дней
+                      </span>
+                    )}
                   </div>
 
                   {/* Colors — smaller, thin dark ring */}

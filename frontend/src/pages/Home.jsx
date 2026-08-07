@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../context/LanguageContext';
+import { fetchSettings } from '../utils/settings';
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -86,9 +87,49 @@ const Marquee = () => {
   );
 };
 
+const DEFAULT_HOME_IMAGES = {
+  sneakers: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
+  tshirts:
+    'https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png',
+  crossfit: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
+};
+
 const FeaturedProducts = () => {
   const navigate = useNavigate();
   const { t } = useLang();
+  const [homeImages, setHomeImages] = useState(DEFAULT_HOME_IMAGES);
+
+  useEffect(() => {
+    let active = true;
+    fetchSettings()
+      .then((s) => {
+        if (!active) return;
+        const overrides = s?.home_categories || {};
+        setHomeImages({
+          sneakers: overrides.sneakers || DEFAULT_HOME_IMAGES.sneakers,
+          tshirts: overrides.tshirts || DEFAULT_HOME_IMAGES.tshirts,
+          crossfit: overrides.crossfit || DEFAULT_HOME_IMAGES.crossfit,
+        });
+      })
+      .catch(() => {});
+    const onUpdate = () => {
+      fetchSettings()
+        .then((s) => {
+          const overrides = s?.home_categories || {};
+          setHomeImages({
+            sneakers: overrides.sneakers || DEFAULT_HOME_IMAGES.sneakers,
+            tshirts: overrides.tshirts || DEFAULT_HOME_IMAGES.tshirts,
+            crossfit: overrides.crossfit || DEFAULT_HOME_IMAGES.crossfit,
+          });
+        })
+        .catch(() => {});
+    };
+    window.addEventListener('settingsUpdate', onUpdate);
+    return () => {
+      active = false;
+      window.removeEventListener('settingsUpdate', onUpdate);
+    };
+  }, []);
 
   return (
     <section className="py-24 bg-neutral-50">
@@ -118,7 +159,7 @@ const FeaturedProducts = () => {
           >
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-              style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800)' }}
+              style={{ backgroundImage: `url(${homeImages.sneakers})` }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
@@ -146,7 +187,7 @@ const FeaturedProducts = () => {
           >
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-              style={{ backgroundImage: 'url(https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png)' }}
+              style={{ backgroundImage: `url(${homeImages.tshirts})` }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
@@ -174,7 +215,7 @@ const FeaturedProducts = () => {
           >
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-              style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800)' }}
+              style={{ backgroundImage: `url(${homeImages.crossfit})` }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">

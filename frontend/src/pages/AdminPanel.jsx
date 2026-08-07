@@ -37,6 +37,9 @@ const AdminPanel = () => {
   const [saving, setSaving] = useState(false);
   const [telegram, setTelegram] = useState('');
   const [savingTg, setSavingTg] = useState(false);
+  const [homeImages, setHomeImages] = useState({ sneakers: '', tshirts: '', crossfit: '' });
+  const [uploadingHome, setUploadingHome] = useState(null); // 'sneakers' | 'tshirts' | 'crossfit'
+  const [savingHome, setSavingHome] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [uploadingIndex, setUploadingIndex] = useState(null);
@@ -87,8 +90,39 @@ const AdminPanel = () => {
     try {
       const s = await fetchSettings();
       setTelegram(s.telegram_username || '');
+      setHomeImages({
+        sneakers: s.home_categories?.sneakers || '',
+        tshirts: s.home_categories?.tshirts || '',
+        crossfit: s.home_categories?.crossfit || '',
+      });
     } catch (e) {
       // non-critical
+    }
+  };
+
+  const handleHomeUpload = async (key, file) => {
+    if (!file) return;
+    setUploadingHome(key);
+    try {
+      const url = await uploadImage(file);
+      setHomeImages((prev) => ({ ...prev, [key]: url }));
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setUploadingHome(null);
+    }
+  };
+
+  const saveHomeImages = async () => {
+    setSavingHome(true);
+    try {
+      await updateSettings({ home_categories: homeImages });
+      toast.success('Фото главной обновлены');
+      window.dispatchEvent(new Event('settingsUpdate'));
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setSavingHome(false);
     }
   };
 
@@ -98,6 +132,7 @@ const AdminPanel = () => {
       const s = await updateSettings({ telegram_username: telegram.replace(/^@/, '') });
       setTelegram(s.telegram_username || '');
       toast.success('Telegram-получатель обновлён');
+      window.dispatchEvent(new Event('settingsUpdate'));
     } catch (e) {
       toast.error(apiError(e));
     } finally {
@@ -425,6 +460,88 @@ const AdminPanel = () => {
               className="flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-[#BFA982] text-black font-semibold tracking-wide hover:bg-[#A8906A] transition-colors disabled:opacity-50"
             >
               {savingTg ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Save className="w-4 h-4" /> СОХРАНИТЬ</>)}
+            </motion.button>
+          </div>
+        </motion.div>
+
+        {/* Home category images */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-sm p-6 mb-8"
+          data-testid="admin-home-images"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-5 h-5 text-[#8A7548]" />
+            <h2 className="font-['Anton'] text-2xl tracking-wide">ФОТО КАТЕГОРИЙ НА ГЛАВНОЙ</h2>
+          </div>
+          <p className="text-black/60 text-sm mb-5">
+            Загрузите фото для карточек «Кроссовки», «Футболки» и «Кроссфит» на главной странице. Оставьте пустым — покажется дефолтная картинка.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { key: 'sneakers', label: 'Кроссовки' },
+              { key: 'tshirts', label: 'Футболки' },
+              { key: 'crossfit', label: 'Кроссфит' },
+            ].map(({ key, label }) => (
+              <div key={key} className="rounded-xl border border-black/10 p-3">
+                <div className="text-xs uppercase tracking-widest text-black/50 mb-2">{label}</div>
+                <div className="relative aspect-[4/5] rounded-lg overflow-hidden bg-neutral-100 mb-3 group">
+                  {homeImages[key] ? (
+                    <img
+                      src={homeImages[key]}
+                      alt={label}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-black/30 text-sm">
+                      Нет фото
+                    </div>
+                  )}
+                  {uploadingHome === key && (
+                    <div className="absolute inset-0 bg-black/50 grid place-items-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-white" />
+                    </div>
+                  )}
+                  {homeImages[key] && !uploadingHome && (
+                    <button
+                      onClick={() =>
+                        setHomeImages((prev) => ({ ...prev, [key]: '' }))
+                      }
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-black/70 text-white rounded-full"
+                      aria-label={`Remove ${label} image`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <label
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-full border border-black/10 text-sm font-medium cursor-pointer hover:bg-neutral-50"
+                  data-testid={`home-image-upload-${key}`}
+                >
+                  <Upload className="w-4 h-4" />
+                  {homeImages[key] ? 'Заменить' : 'Загрузить'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => handleHomeUpload(key, e.target.files?.[0])}
+                    disabled={uploadingHome === key}
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end mt-5">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={saveHomeImages}
+              disabled={savingHome}
+              data-testid="save-home-images"
+              className="flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-black text-white font-semibold tracking-wide hover:bg-black/80 transition-colors disabled:opacity-50"
+            >
+              {savingHome ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Save className="w-4 h-4" /> СОХРАНИТЬ ФОТО</>)}
             </motion.button>
           </div>
         </motion.div>

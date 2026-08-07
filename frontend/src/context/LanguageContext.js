@@ -63,6 +63,11 @@ const translations = {
     search_placeholder: 'Поиск по товарам…',
     search_no_results: 'Ничего не найдено',
     search_popular: 'Популярное сейчас',
+    preorder_delivery: 'Товар придёт в течении 6–8 дней',
+    contact_admin: 'Связаться с админом',
+    admin_home_images: 'ФОТО КАТЕГОРИЙ НА ГЛАВНОЙ',
+    admin_home_images_desc: 'Эти три фото показываются на главной странице для категорий «Кроссовки», «Футболки» и «Кроссфит». Загрузите свои картинки.',
+    admin_home_uploaded: 'Фото главной обновлены',
   },
   uz: {
     nav_catalog: 'KATALOG',
@@ -126,6 +131,11 @@ const translations = {
     search_placeholder: "Mahsulotlar bo'yicha qidirish…",
     search_no_results: 'Hech narsa topilmadi',
     search_popular: 'Ommabop hozir',
+    preorder_delivery: '6–8 kun ichida yetkazib beriladi',
+    contact_admin: 'Admin bilan bogʻlanish',
+    admin_home_images: 'BOSH SAHIFA KATEGORIYA RASMLARI',
+    admin_home_images_desc: 'Bu uch rasm bosh sahifadagi «Krossovkalar», «Futbolkalar» va «Krossfit» uchun ishlatiladi.',
+    admin_home_uploaded: 'Bosh sahifa rasmlari yangilandi',
   },
 };
 

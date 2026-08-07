@@ -19,7 +19,7 @@ import uuid
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
@@ -158,7 +158,8 @@ class LoginRequest(BaseModel):
 
 
 class SettingsUpdate(BaseModel):
-    telegram_username: str
+    telegram_username: Optional[str] = None
+    home_categories: Optional[Dict[str, str]] = None  # {sneakers, tshirts, crossfit} -> image url
 
 
 class OrderItem(BaseModel):
@@ -224,18 +225,31 @@ async def me(admin: dict = Depends(require_admin)):
 @api_router.get("/settings")
 async def get_settings():
     doc = await db.settings.find_one({"key": "store"}, {"_id": 0})
-    return {"telegram_username": (doc or {}).get("telegram_username", "")}
+    return {
+        "telegram_username": (doc or {}).get("telegram_username", ""),
+        "home_categories": (doc or {}).get("home_categories", {}),
+    }
 
 
 @api_router.put("/settings")
 async def update_settings(body: SettingsUpdate, admin: dict = Depends(require_admin)):
-    username = body.telegram_username.strip().lstrip("@")
-    await db.settings.update_one(
-        {"key": "store"},
-        {"$set": {"telegram_username": username}},
-        upsert=True,
-    )
-    return {"telegram_username": username}
+    updates = {}
+    if body.telegram_username is not None:
+        updates["telegram_username"] = body.telegram_username.strip().lstrip("@")
+    if body.home_categories is not None:
+        # store as flat dict {category: url}
+        updates["home_categories"] = {
+            k: v for k, v in body.home_categories.items() if isinstance(v, str)
+        }
+    if updates:
+        await db.settings.update_one(
+            {"key": "store"}, {"$set": updates}, upsert=True
+        )
+    doc = await db.settings.find_one({"key": "store"}, {"_id": 0}) or {}
+    return {
+        "telegram_username": doc.get("telegram_username", ""),
+        "home_categories": doc.get("home_categories", {}),
+    }
 
 
 # ----------------------------------------------------------------------------
