@@ -1,0 +1,21 @@
+/* RepX App Styles */
+* {
+  box-sizing: border-box;
+}
+
+.App {
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+/* Remove default button focus styles */
+button:focus {
+  outline: none;
+}
+
+/* Smooth transitions for interactive elements */
+button, a, input, select, textarea {
+  transition-property: background-color, border-color, color, transform;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
