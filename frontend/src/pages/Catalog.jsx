@@ -254,10 +254,6 @@ const Catalog = () => {
                     >
                       {product.status === 'available' ? t('badge_in') : t('badge_pre')}
                     </span>
-                    {product.status === 'pre-order' && (
-                      <span className="inline-block px-2 py-0.5 text-[9px] tracking-wide font-medium text-white bg-[#8A7548] rounded-sm">
-                        6–8 дней
-                      </span>
                     )}
                   </div>
 
@@ -283,17 +279,22 @@ const Catalog = () => {
                   </div>
                 </div>
 
-                <div className="pt-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-semibold text-base leading-snug text-black line-clamp-2">
-                      {product.name}
-                    </h3>
-                    <p className="font-['Anton'] text-xl tracking-wide shrink-0">
-                      {formatPrice(product.price)}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-xs text-black/50">{categoryLabel(product.category)}</p>
+                <div className="pt-3 px-1 flex flex-col justify-between flex-grow">
+
+    <h3 className="font-bold text-sm leading-snug text-zinc-900 line-clamp-2 min-h-[36px] mb-1">
+      {product.name}
+    </h3>
+    <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wide">
+      {categoryLabel(product.category)}
+    </p>
+
+  <div className="mt-2 pt-1.5 border-t border-zinc-100">
+    <p className="font-['Anton'] text-base font-black text-black tracking-wide">
+      {formatPrice(product.price)}
+    </p>
+  </div> 
                 </div>
+
               </motion.div>
             ))}
           </AnimatePresence>
