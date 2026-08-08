@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 // Components
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Orders from './pages/Orders';
 import Cart from "@/components/Cart";
 import ScrollToTop from "@/components/ScrollToTop";
 import BottomNav from "@/components/BottomNav";
@@ -48,6 +49,7 @@ function App() {
             <Route path="/catalog" element={<Catalog />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/orders" element={<Orders />} />
           </Routes>
           <Footer />
           <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} />
