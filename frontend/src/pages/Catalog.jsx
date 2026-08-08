@@ -285,7 +285,7 @@ const Catalog = () => {
 
                 <div className="pt-4">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-semibold text-base leading-snug text-black truncate">
+                    <h3 className="font-semibold text-base leading-snug text-black line-clamp-2">
                       {product.name}
                     </h3>
                     <p className="font-['Anton'] text-xl tracking-wide shrink-0">
