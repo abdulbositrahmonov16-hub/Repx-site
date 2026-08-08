@@ -6,7 +6,6 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Загружаем все заказы с вашего сервера на Render
   const loadOrders = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/orders`, {
@@ -17,13 +16,12 @@ const Orders = () => {
         setOrders(data);
       }
     } catch (e) {
-      console.error("Ошибка загрузки заказов", e);
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  // Функция перевода заказа в статус "Оплачен" (Чинит выручку!)
   const markAsPaid = async (orderId) => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/orders/${orderId}/complete`, {
@@ -31,17 +29,18 @@ const Orders = () => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
-        // Обновляем список на экране
         loadOrders();
       }
     } catch (e) {
-      alert("Не удалось изменить статус");
+      alert("Ошибка изменения статуса");
     }
   };
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => { 
+    loadOrders(); 
+  }, []);
 
-  if (loading) return <div className="p-8 text-center text-zinc-400 font-bold">ЗАГРУЗКА ЖУРНАЛА ЗАКАЗОВ...</div>;
+  if (loading) return <div className="p-8 text-center text-zinc-400 font-bold">ЗАГРУЗКА...</div>;
 
   return (
     <div className="min-h-screen bg-zinc-50 p-4 pb-24 text-black">
@@ -56,7 +55,9 @@ const Orders = () => {
               <div key={order.id || order._id} className="bg-white p-4 rounded-xl shadow-sm border border-zinc-100 flex flex-col justify-between gap-4">
                 <div>
                   <div className="flex justify-between items-center border-b border-zinc-100 pb-2 mb-2">
-                    <span className="text-xs font-black text-zinc-400 uppercase">Заказ #{ (order.id || order._id).slice(-4) }</span>
+                    <span className="text-xs font-black text-zinc-400 uppercase">
+                      Заказ #{(order.id || order._id).slice(-4)}
+                    </span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
                       order.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                     }`}>
@@ -64,11 +65,10 @@ const Orders = () => {
                     </span>
                   </div>
                   
-                  {/* Список товаров в заказе */}
                   <div className="space-y-1.5">
                     {order.items?.map((item, idx) => (
                       <div key={idx} className="text-sm font-medium text-zinc-800">
-                        • {item.name} ({item.color || 'Оригинал'}) — размер {item.size}, {item.quantity} шт.
+                        • {item.name} — размер {item.size}, {item.quantity} шт.
                       </div>
                     ))}
                   </div>
@@ -77,13 +77,15 @@ const Orders = () => {
                 <div className="flex items-center justify-between pt-2 border-t border-zinc-100 mt-2">
                   <div>
                     <span className="text-xs font-bold text-zinc-400 block uppercase">Итого</span>
-                    <span className="text-base font-black text-black">{formatPrice ? formatPrice(order.total_price) : `${order.total_price?.toLocaleString()} сум`}</span>
+                    <span className="text-base font-black text-black">
+                      {formatPrice ? formatPrice(order.total_price) : `${order.total_price?.toLocaleString()} сум`}
+                    </span>
                   </div>
                   
                   {order.status !== 'completed' && (
                     <button 
                       onClick={() => markAsPaid(order.id || order._id)}
-                      className="px-4 py-2 bg-black text-white text-xs font-black rounded-lg uppercase tracking-wider hover:bg-zinc-800 transition-colors"
+                      className="px-4 py-2 bg-black text-white text-xs font-black rounded-lg uppercase tracking-wider transition-colors"
                     >
                       Оплачено
                     </button>
