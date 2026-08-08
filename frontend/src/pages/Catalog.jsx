@@ -50,7 +50,7 @@ const Catalog = () => {
     loadProducts();
     window.addEventListener('productsUpdate', loadProducts);
     return () => window.removeEventListener('productsUpdate', loadProducts);
-  }, [loadProducts]]);
+  }, [loadProducts]);
 
   const filteredProducts = useMemo(() => {
     let result = filter === 'all' ? allProducts : allProducts.filter((p) => p.category === filter);
