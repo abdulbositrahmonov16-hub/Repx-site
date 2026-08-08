@@ -105,7 +105,6 @@ const Footer = () => {
               >
                 <Send className="w-4 h-4" />
                 {t('contact_admin')}
-                <span className="text-black/70 text-xs">@{tgHandle}</span>
               </a>
 
               {/* Social links */}

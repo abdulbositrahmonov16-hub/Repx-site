@@ -160,33 +160,6 @@ const Catalog = () => {
                 </button>
               ))}
             </div>
-
-            {/* Sort */}
-            <div className="flex items-center gap-3">
-              <label htmlFor="sort" className="hidden md:inline text-xs uppercase tracking-[0.2em] text-black/50">
-                {t('sort_by')}
-              </label>
-              <div className="relative">
-                <select
-                  id="sort"
-                  data-testid="sort-select"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-white border border-black/10 rounded-full py-2 pl-4 pr-9 text-sm font-medium hover:border-black/40 focus:outline-none focus:border-black transition-colors cursor-pointer"
-                >
-                  <option value="new">{t('sort_new')}</option>
-                  <option value="price_asc">{t('sort_price_asc')}</option>
-                  <option value="price_desc">{t('sort_price_desc')}</option>
-                </select>
-                <svg
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-black/60"
-                  viewBox="0 0 12 8"
-                  fill="none"
-                >
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </div>
           </div>
 
           {/* Status + sneaker sub-filters */}
