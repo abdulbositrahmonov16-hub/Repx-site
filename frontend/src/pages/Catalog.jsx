@@ -76,7 +76,7 @@ const Catalog = () => {
   const filters = [
     { id: 'all', label: t('f_all') },
     { id: 'sneakers', label: t('f_sneakers') },
-    { id: 'tshirts', label: t('f_tshirts') },
+    { id: 'tshirts', label: t('Одежда / Носки / Шорты') },
     { id: 'crossfit', label: t('f_crossfit') },
   ];
 
