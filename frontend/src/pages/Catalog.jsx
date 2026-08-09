@@ -202,7 +202,57 @@ const Catalog = () => {
                   ))}
                 </motion.div>
               )}
-            </AnimatePresence>
+                 {filter === 'tshirts' && (
+        <motion.div
+          initial={{ opacity: 0, width: 0 }}
+          animate={{ opacity: 1, width: 'auto' }}
+          exit={{ opacity: 0, width: 0 }}
+          className="flex gap-2 items-center overflow-flow-hidden"
+        >
+          <span className="mx-1 h-4 w-px bg-black/10" />
+          <button
+            onClick={() => setSubFilter('all')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
+              subFilter === 'all'
+                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
+                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
+            }`}
+          >
+            Все
+          </button>
+          <button
+            onClick={() => setSubFilter('tshirts_main')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
+              subFilter === 'tshirts_main'
+                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
+                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
+            }`}
+          >
+            Футболки
+          </button>
+          <button
+            onClick={() => setSubFilter('shorts')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
+              subFilter === 'shorts'
+                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
+                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
+            }`}
+          >
+            Шорты
+          </button>
+          <button
+            onClick={() => setSubFilter('socks')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
+              subFilter === 'socks'
+                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
+                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
+            }`}
+          >
+            Носки
+          </button>
+        </motion.div>
+      )}
+ </AnimatePresence>
 
             <div className="ml-auto text-xs text-black/50" data-testid="results-count">
               {filteredProducts.length}
