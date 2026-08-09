@@ -303,8 +303,8 @@ async def get_stats(admin: dict = Depends(require_admin)):
     orders_count = await db.orders.count_documents({})
     new_orders = await db.orders.count_documents({"status": "new"})
     add_to_cart = await db.cart_events.count_documents({})
-    revenue_docs = await db.orders.find({"status": "completed"}, {"_id": 0, "total": 1}).to_list(1000)
-    revenue = sum(int(d.get("total", 0)) for d in revenue_docs)
+    revenue_docs = await db.orders.find({"status": {"$in": ["completed", "Completed", "выполнен", "Выполнен"]}}, {"_id": 0, "total_price": 1}).to_list(1000)
+    revenue = sum(int(d.get("total_price", 0)) for d in revenue_docs)
     return {
         "products": products_count,
         "orders": orders_count,
