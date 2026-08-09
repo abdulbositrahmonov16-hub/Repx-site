@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { sneakerSubcategories } from '../mockData';
 import { fetchProducts } from '../utils/products';
-import { apiError } from '../utils/api';
 import { formatPrice } from '../utils/cart';
 import { useLang } from '../context/LanguageContext';
 
