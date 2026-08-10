@@ -1,5 +1,5 @@
 """
-RepX Store вЂ” FastAPI backend.
+RepX Store — FastAPI backend.
 
 Features:
   - Products CRUD (MongoDB)
@@ -98,16 +98,16 @@ async def require_admin(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> dict:
     if credentials is None:
-        raise HTTPException(status_code=401, detail="РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ")
+        raise HTTPException(status_code=401, detail="Требуется авторизация")
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("role") != "admin":
-            raise HTTPException(status_code=401, detail="РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РїСЂР°РІ")
+            raise HTTPException(status_code=401, detail="Недостаточно прав")
         return payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="РЎРµСЃСЃРёСЏ РёСЃС‚РµРєР»Р°, РІРѕР№РґРёС‚Рµ СЃРЅРѕРІР°")
+        raise HTTPException(status_code=401, detail="Сессия истекла, войдите снова")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="РќРµРґРµР№СЃС‚РІРёС‚РµР»СЊРЅС‹Р№ С‚РѕРєРµРЅ")
+        raise HTTPException(status_code=401, detail="Недействительный токен")
 
 
 # ----------------------------------------------------------------------------
@@ -120,12 +120,12 @@ class Color(BaseModel):
 
 class ProductBase(BaseModel):
     name: str
-    category: str  # 'sneakers' | 'tshirts' (РћРґРµР¶РґР°) | 'crossfit'
-    subcategory: Optional[str] = None  # sneakers: 'running'|'crossfit'|'daily'; tshirts (РћРґРµР¶РґР°): 'tshirts'|'shorts'|'socks'
+    category: str  # 'sneakers' | 'tshirts' (Одежда) | 'crossfit'
+    subcategory: Optional[str] = None  # sneakers: 'running'|'crossfit'|'daily'; tshirts (Одежда): 'tshirts'|'shorts'|'socks'
     price: int
     images: List[str] = []
     colors: List[Color] = []  # optional per-color image galleries
-    sizes: List[Any] = []  # mixed: numbers (39..46) or strings ('S','M','Р•РґРёРЅС‹Р№')
+    sizes: List[Any] = []  # mixed: numbers (39..46) or strings ('S','M','Единый')
     status: str = "available"  # 'available' | 'pre-order'
     description: str = ""
 
@@ -183,7 +183,7 @@ class OrderCreate(BaseModel):
 # CRM statuses. 'sold' is the only status that counts towards revenue.
 ORDER_STATUSES = ["new", "contacted", "sold", "canceled"]
 # Legacy values that used to mean "sold" in older builds.
-SOLD_STATUSES = ["sold", "done", "completed", "Completed", "РІС‹РїРѕР»РЅРµРЅ", "Р’С‹РїРѕР»РЅРµРЅ"]
+SOLD_STATUSES = ["sold", "done", "completed", "Completed", "выполнен", "Выполнен"]
 
 
 class Order(OrderCreate):
@@ -228,7 +228,7 @@ async def root():
 async def login(body: LoginRequest):
     settings = await db.admin_settings.find_one({"key": "admin"}, {"_id": 0})
     if not settings or not verify_password(body.password, settings["password_hash"]):
-        raise HTTPException(status_code=401, detail="РќРµРІРµСЂРЅС‹Р№ РїР°СЂРѕР»СЊ")
+        raise HTTPException(status_code=401, detail="Неверный пароль")
     return {"token": create_access_token(), "token_type": "bearer"}
 
 
@@ -294,7 +294,7 @@ async def update_order(
 
     if body.status is not None:
         if body.status not in ORDER_STATUSES:
-            raise HTTPException(status_code=400, detail="РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ СЃС‚Р°С‚СѓСЃ Р·Р°РєР°Р·Р°")
+            raise HTTPException(status_code=400, detail="Недопустимый статус заказа")
         updates["status"] = body.status
         # Revenue is driven by 'sold': stamp / clear the sale date accordingly.
         updates["sold_at"] = (
@@ -307,7 +307,7 @@ async def update_order(
             updates[field] = value.strip()
 
     if not updates:
-        raise HTTPException(status_code=400, detail="РќРµС‡РµРіРѕ РѕР±РЅРѕРІР»СЏС‚СЊ")
+        raise HTTPException(status_code=400, detail="Нечего обновлять")
 
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
@@ -451,7 +451,7 @@ async def delete_product(product_id: str, admin: dict = Depends(require_admin)):
 
 
 # ----------------------------------------------------------------------------
-# Routes: image upload (Cloudinary) вЂ” admin only
+# Routes: image upload (Cloudinary) — admin only
 # ----------------------------------------------------------------------------
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024  # 8 MB
@@ -464,14 +464,14 @@ async def upload_image(
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=400,
-            detail="РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ С„РѕСЂРјР°С‚. Р Р°Р·СЂРµС€РµРЅС‹: JPEG, PNG, WEBP, GIF",
+            detail="Недопустимый формат. Разрешены: JPEG, PNG, WEBP, GIF",
         )
 
     contents = await file.read()
     if len(contents) > MAX_UPLOAD_BYTES:
         raise HTTPException(
             status_code=400,
-            detail="Р¤Р°Р№Р» СЃР»РёС€РєРѕРј Р±РѕР»СЊС€РѕР№. РњР°РєСЃРёРјСѓРј 8 РњР‘.",
+            detail="Файл слишком большой. Максимум 8 МБ.",
         )
 
     try:
@@ -480,7 +480,7 @@ async def upload_image(
         )
     except Exception as e:
         logger.error("Cloudinary upload failed: %s", e)
-        raise HTTPException(status_code=502, detail="РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ")
+        raise HTTPException(status_code=502, detail="Не удалось загрузить изображение")
 
     return {"url": result["secure_url"], "secure_url": result["secure_url"]}
 
@@ -491,7 +491,7 @@ async def upload_image(
 SEED_PRODUCTS = [
     {
         "id": "1",
-        "name": "RepX Training РљСЂРѕСЃСЃРѕРІРєРё",
+        "name": "RepX Training Кроссовки",
         "category": "sneakers",
         "subcategory": "crossfit",
         "price": 850000,
@@ -501,33 +501,33 @@ SEED_PRODUCTS = [
         ],
         "sizes": [39, 40, 41, 42, 43, 44, 45],
         "status": "available",
-        "description": "РџСЂРѕС„РµСЃСЃРёРѕРЅР°Р»СЊРЅС‹Рµ С‚СЂРµРЅРёСЂРѕРІРѕС‡РЅС‹Рµ РєСЂРѕСЃСЃРѕРІРєРё RepX РґР»СЏ РјР°РєСЃРёРјР°Р»СЊРЅРѕР№ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё.",
+        "description": "Профессиональные тренировочные кроссовки RepX для максимальной производительности.",
     },
     {
         "id": "2",
-        "name": "RepX Pro РљСЂРѕСЃСЃРѕРІРєРё",
+        "name": "RepX Pro Кроссовки",
         "category": "sneakers",
         "subcategory": "running",
         "price": 950000,
         "images": ["https://images.unsplash.com/photo-1605348532760-6753d2c43329?w=800"],
         "sizes": [39, 40, 41, 42, 43, 44],
         "status": "available",
-        "description": "РџСЂРµРјРёР°Р»СЊРЅР°СЏ РјРѕРґРµР»СЊ РґР»СЏ Р±РµРіР°. РРЅРЅРѕРІР°С†РёРѕРЅРЅР°СЏ Р°РјРѕСЂС‚РёР·Р°С†РёСЏ Рё РґС‹С€Р°С‰РёР№ РјР°С‚РµСЂРёР°Р».",
+        "description": "Премиальная модель для бега. Инновационная амортизация и дышащий материал.",
     },
     {
         "id": "5",
-        "name": "RepX Elite РљСЂРѕСЃСЃРѕРІРєРё",
+        "name": "RepX Elite Кроссовки",
         "category": "sneakers",
         "subcategory": "daily",
         "price": 1100000,
         "images": ["https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800"],
         "sizes": [40, 41, 42, 43, 44, 45],
         "status": "available",
-        "description": "РўРѕРїРѕРІР°СЏ РјРѕРґРµР»СЊ Р»РёРЅРµР№РєРё RepX. РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РєРѕРјС„РѕСЂС‚ Рё СЃС‚РёР»СЊ РЅР° РєР°Р¶РґС‹Р№ РґРµРЅСЊ.",
+        "description": "Топовая модель линейки RepX. Максимальный комфорт и стиль на каждый день.",
     },
     {
         "id": "3",
-        "name": "RepX Classic Р¤СѓС‚Р±РѕР»РєР°",
+        "name": "RepX Classic Футболка",
         "category": "tshirts",
         "subcategory": "tshirts",
         "price": 250000,
@@ -536,11 +536,11 @@ SEED_PRODUCTS = [
         ],
         "sizes": ["S", "M", "L", "XL", "XXL"],
         "status": "available",
-        "description": "РљР»Р°СЃСЃРёС‡РµСЃРєР°СЏ С„СѓС‚Р±РѕР»РєР° RepX РёР· РїСЂРµРјРёР°Р»СЊРЅРѕРіРѕ С…Р»РѕРїРєР°.",
+        "description": "Классическая футболка RepX из премиального хлопка.",
     },
     {
         "id": "4",
-        "name": "RepX Performance Р¤СѓС‚Р±РѕР»РєР°",
+        "name": "RepX Performance Футболка",
         "category": "tshirts",
         "subcategory": "tshirts",
         "price": 280000,
@@ -549,11 +549,11 @@ SEED_PRODUCTS = [
         ],
         "sizes": ["S", "M", "L", "XL"],
         "status": "pre-order",
-        "description": "РўРµС…РЅРѕР»РѕРіРёС‡РЅР°СЏ С„СѓС‚Р±РѕР»РєР° СЃ РІР»Р°РіРѕРѕС‚РІРѕРґСЏС‰РµР№ С‚РєР°РЅСЊСЋ РґР»СЏ РёРЅС‚РµРЅСЃРёРІРЅС‹С… С‚СЂРµРЅРёСЂРѕРІРѕРє.",
+        "description": "Технологичная футболка с влагоотводящей тканью для интенсивных тренировок.",
     },
     {
         "id": "6",
-        "name": "RepX ONE MORE Р¤СѓС‚Р±РѕР»РєР°",
+        "name": "RepX ONE MORE Футболка",
         "category": "tshirts",
         "subcategory": "tshirts",
         "price": 300000,
@@ -562,47 +562,47 @@ SEED_PRODUCTS = [
         ],
         "sizes": ["S", "M", "L", "XL", "XXL"],
         "status": "available",
-        "description": "Р›РёРјРёС‚РёСЂРѕРІР°РЅРЅР°СЏ С„СѓС‚Р±РѕР»РєР° СЃ С„РёСЂРјРµРЅРЅС‹Рј СЃР»РѕРіР°РЅРѕРј ONE MORE.",
+        "description": "Лимитированная футболка с фирменным слоганом ONE MORE.",
     },
     {
         "id": "7",
-        "name": "RepX РЎРєР°РєР°Р»РєР° Speed",
+        "name": "RepX Скакалка Speed",
         "category": "crossfit",
         "price": 180000,
         "images": ["https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=800"],
-        "sizes": ["Р•РґРёРЅС‹Р№"],
+        "sizes": ["Единый"],
         "status": "available",
-        "description": "РЎРєРѕСЂРѕСЃС‚РЅР°СЏ СЃРєР°РєР°Р»РєР° RepX СЃ РїРѕРґС€РёРїРЅРёРєР°РјРё. РРґРµР°Р»СЊРЅР° РґР»СЏ double-unders.",
+        "description": "Скоростная скакалка RepX с подшипниками. Идеальна для double-unders.",
     },
     {
         "id": "8",
-        "name": "RepX РќР°РєРѕР»РµРЅРЅРёРєРё",
+        "name": "RepX Наколенники",
         "category": "crossfit",
         "price": 220000,
         "images": ["https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=800"],
         "sizes": ["S", "M", "L", "XL"],
         "status": "available",
-        "description": "РљРѕРјРїСЂРµСЃСЃРёРѕРЅРЅС‹Рµ РЅР°РєРѕР»РµРЅРЅРёРєРё 7 РјРј РґР»СЏ С‚СЏР¶С‘Р»С‹С… РїСЂРёСЃРµРґР°РЅРёР№.",
+        "description": "Компрессионные наколенники 7 мм для тяжёлых приседаний.",
     },
     {
         "id": "9",
-        "name": "RepX РќР°РєР»Р°РґРєРё РґР»СЏ СЂСѓРє",
+        "name": "RepX Накладки для рук",
         "category": "crossfit",
         "price": 150000,
         "images": ["https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800"],
         "sizes": ["S", "M", "L"],
         "status": "available",
-        "description": "РљРѕР¶Р°РЅС‹Рµ РЅР°РєР»Р°РґРєРё (grips) РґР»СЏ Р·Р°С‰РёС‚С‹ Р»Р°РґРѕРЅРµР№ РЅР° С‚СѓСЂРЅРёРєРµ Рё РєРѕР»СЊС†Р°С….",
+        "description": "Кожаные накладки (grips) для защиты ладоней на турнике и кольцах.",
     },
     {
         "id": "10",
-        "name": "RepX РџРѕСЏСЃ Р°С‚Р»РµС‚РёС‡РµСЃРєРёР№",
+        "name": "RepX Пояс атлетический",
         "category": "crossfit",
         "price": 350000,
         "images": ["https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=800"],
         "sizes": ["M", "L", "XL"],
         "status": "pre-order",
-        "description": "РўСЏР¶РµР»РѕР°С‚Р»РµС‚РёС‡РµСЃРєРёР№ РїРѕСЏСЃ RepX РёР· РЅР°С‚СѓСЂР°Р»СЊРЅРѕР№ РєРѕР¶Рё.",
+        "description": "Тяжелоатлетический пояс RepX из натуральной кожи.",
     },
 ]
 
@@ -635,7 +635,7 @@ async def seed_database():
         await db.products.insert_many(docs)
         logger.info("Seeded %d products", len(docs))
     else:
-        logger.info("Products already present (%d) вЂ” skipping seed", count)
+        logger.info("Products already present (%d) — skipping seed", count)
 
 
 # ----------------------------------------------------------------------------
