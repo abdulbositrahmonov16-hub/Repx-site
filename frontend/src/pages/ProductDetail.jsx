@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check } from 'lucide-react';
+import { ChevronLeft, Check, X, ZoomIn, ChevronRight } from 'lucide-react';
 import { fetchProductById } from '../utils/products';
 import { apiError } from '../utils/api';
 import { logAddToCart } from '../utils/orders';
@@ -12,12 +12,15 @@ import { toast } from 'sonner';
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t, categoryLabel } = useLang();
+  const { t, categoryLabel, lang } = useLang();
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState(null);
   const [colorIdx, setColorIdx] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Lightbox state: null = closed, 'gallery' = product photos, 'sizeChart' = size chart image
+  const [lightbox, setLightbox] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -53,6 +56,7 @@ const ProductDetail = () => {
   const colors = product.colors || [];
   const hasColors = colors.length > 0;
   const gallery = hasColors ? (colors[colorIdx]?.images || []) : (product.images || []);
+  const hasSizeChart = !!product.sizeChart;
 
   const handleColorSelect = (i) => {
     setColorIdx(i);
@@ -73,6 +77,15 @@ const ProductDetail = () => {
     });
     logAddToCart(product, selectedSize);
     toast.success(t('pd_added'));
+  };
+
+  const nextImage = () => setSelectedImage((i) => (i + 1) % gallery.length);
+  const prevImage = () => setSelectedImage((i) => (i - 1 + gallery.length) % gallery.length);
+
+  const handleDragEnd = (e, info) => {
+    const threshold = 60;
+    if (info.offset.x < -threshold) nextImage();
+    else if (info.offset.x > threshold) prevImage();
   };
 
   return (
@@ -96,7 +109,8 @@ const ProductDetail = () => {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="relative bg-neutral-100 mb-4 aspect-square overflow-hidden rounded-xl"
+              onClick={() => setLightbox('gallery')}
+              className="relative bg-neutral-100 mb-4 aspect-square overflow-hidden rounded-xl cursor-zoom-in"
             >
               <AnimatePresence mode="wait">
                 <motion.img
@@ -120,6 +134,9 @@ const ProductDetail = () => {
                 >
                   {product.status === 'available' ? t('badge_in') : t('badge_pre')}
                 </span>
+              </div>
+              <div className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center">
+                <ZoomIn className="w-4 h-4 text-black" />
               </div>
             </motion.div>
 
@@ -240,6 +257,23 @@ const ProductDetail = () => {
                   </motion.button>
                 ))}
               </div>
+
+              {/* Size chart */}
+              {hasSizeChart && (
+                <button
+                  onClick={() => setLightbox('sizeChart')}
+                  data-testid="pd-size-chart-btn"
+                  className="mt-4 flex items-center gap-3 w-full rounded-lg border border-black/10 hover:border-black/30 px-3 py-2.5 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-md overflow-hidden bg-neutral-100 shrink-0">
+                    <img src={product.sizeChart} alt="size chart" className="w-full h-full object-cover" />
+                  </div>
+                  <span className="text-sm text-black/70 flex-1 text-left">
+                    {lang === 'uz' ? "O'lchamlar jadvali" : 'Таблица размеров'}
+                  </span>
+                  <ZoomIn className="w-4 h-4 text-black/40" />
+                </button>
+              )}
             </div>
 
             {/* Desktop add-to-cart */}
@@ -277,6 +311,79 @@ const ProductDetail = () => {
           <span className="font-['Anton'] text-base tracking-wide">{formatPrice(product.price)}</span>
         </motion.button>
       </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightbox(null)}
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          >
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {lightbox === 'gallery' ? (
+              <>
+                <motion.img
+                  key={selectedImage}
+                  src={gallery[selectedImage]}
+                  alt={product.name}
+                  drag={gallery.length > 1 ? 'x' : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.6}
+                  onDragEnd={handleDragEnd}
+                  onClick={(e) => e.stopPropagation()}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="max-w-[92vw] max-h-[80vh] object-contain touch-pan-y"
+                />
+                {gallery.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                      className="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                      className="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {gallery.map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1.5 h-1.5 rounded-full ${i === selectedImage ? 'bg-white' : 'bg-white/30'}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <motion.img
+                src={product.sizeChart}
+                alt="size chart"
+                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="max-w-[92vw] max-h-[85vh] object-contain rounded-lg"
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
