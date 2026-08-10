@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import { sneakerSubcategories } from '../mockData';
+import { sneakerSubcategories, clothingSubcategories } from '../mockData';
+import { apiError } from '../utils/api';
 import { fetchProducts } from '../utils/products';
 import { formatPrice } from '../utils/cart';
 import { useLang } from '../context/LanguageContext';
@@ -26,7 +27,7 @@ const Catalog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadProducts = async (attempt = 0) => {
+  const loadProducts = useCallback(async (attempt = 0) => {
     setLoading(true);
     if (attempt === 0) setError('');
     try {
@@ -43,17 +44,18 @@ const Catalog = () => {
     } finally {
       if (attempt === 0 || attempt >= 2) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadProducts();
-    window.addEventListener('productsUpdate', loadProducts);
-    return () => window.removeEventListener('productsUpdate', loadProducts);
+    const onUpdate = () => loadProducts();
+    window.addEventListener('productsUpdate', onUpdate);
+    return () => window.removeEventListener('productsUpdate', onUpdate);
   }, [loadProducts]);
 
   const filteredProducts = useMemo(() => {
     let result = filter === 'all' ? allProducts : allProducts.filter((p) => p.category === filter);
-    if (filter === 'sneakers' && subFilter !== 'all') {
+    if ((filter === 'sneakers' || filter === 'tshirts') && subFilter !== 'all') {
       result = result.filter((p) => p.subcategory === subFilter);
     }
     if (statusFilter !== 'all') {
@@ -72,10 +74,13 @@ const Catalog = () => {
     setSubFilter('all');
   };
 
+  const subcategories =
+    filter === 'sneakers' ? sneakerSubcategories : filter === 'tshirts' ? clothingSubcategories : [];
+
   const filters = [
     { id: 'all', label: t('f_all') },
     { id: 'sneakers', label: t('f_sneakers') },
-    { id: 'tshirts', label: t('Одежда / Носки / Шорты') },
+    { id: 'tshirts', label: t('f_tshirts') },
     { id: 'crossfit', label: t('f_crossfit') },
   ];
 
@@ -178,80 +183,31 @@ const Catalog = () => {
             ))}
 
             <AnimatePresence>
-              {filter === 'sneakers' && (
+              {subcategories.length > 0 && (
                 <motion.div
+                  key={filter}
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
                   exit={{ opacity: 0, width: 0 }}
                   className="flex gap-2 items-center overflow-hidden"
                 >
                   <span className="mx-1 h-4 w-px bg-black/10" />
-                  {sneakerSubcategories.map((s) => (
+                  {subcategories.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => setSubFilter(s.id)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wide border transition-all duration-300 ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wide border transition-all duration-300 whitespace-nowrap ${
                         subFilter === s.id
                           ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
                           : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
                       }`}
                     >
-                      {s.label}
+                      {filter === 'tshirts' ? t(`sub_${s.id}`) : s.label}
                     </button>
                   ))}
                 </motion.div>
               )}
-                 {filter === 'tshirts' && (
-        <motion.div
-          initial={{ opacity: 0, width: 0 }}
-          animate={{ opacity: 1, width: 'auto' }}
-          exit={{ opacity: 0, width: 0 }}
-          className="flex gap-2 items-center overflow-flow-hidden"
-        >
-          <span className="mx-1 h-4 w-px bg-black/10" />
-          <button
-            onClick={() => setSubFilter('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
-              subFilter === 'all'
-                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
-                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
-            }`}
-          >
-            Все
-          </button>
-          <button
-            onClick={() => setSubFilter('tshirts_main')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
-              subFilter === 'tshirts_main'
-                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
-                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
-            }`}
-          >
-            Футболки
-          </button>
-          <button
-            onClick={() => setSubFilter('shorts')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
-              subFilter === 'shorts'
-                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
-                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
-            }`}
-          >
-            Шорты
-          </button>
-          <button
-            onClick={() => setSubFilter('socks')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
-              subFilter === 'socks'
-                ? 'border-[#BFA982] bg-[#BFA982]/15 text-[#8A7548]'
-                : 'border-black/10 text-black/60 hover:border-black/40 hover:text-black'
-            }`}
-          >
-            Носки
-          </button>
-        </motion.div>
-      )}
- </AnimatePresence>
+            </AnimatePresence>
 
             <div className="ml-auto text-xs text-black/50" data-testid="results-count">
               {filteredProducts.length}
@@ -303,7 +259,6 @@ const Catalog = () => {
                     >
                       {product.status === 'available' ? t('badge_in') : t('badge_pre')}
                     </span>
-                    )}
                   </div>
 
                   {/* Colors — smaller, thin dark ring */}
