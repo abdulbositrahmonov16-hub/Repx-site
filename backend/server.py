@@ -1,5 +1,5 @@
 """
-RepX Store — FastAPI backend.
+RepX Store вЂ” FastAPI backend.
 
 Features:
   - Products CRUD (MongoDB)
@@ -98,16 +98,16 @@ async def require_admin(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> dict:
     if credentials is None:
-        raise HTTPException(status_code=401, detail="Требуется авторизация")
+        raise HTTPException(status_code=401, detail="РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ")
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("role") != "admin":
-            raise HTTPException(status_code=401, detail="Недостаточно прав")
+            raise HTTPException(status_code=401, detail="РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РїСЂР°РІ")
         return payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Сессия истекла, войдите снова")
+        raise HTTPException(status_code=401, detail="РЎРµСЃСЃРёСЏ РёСЃС‚РµРєР»Р°, РІРѕР№РґРёС‚Рµ СЃРЅРѕРІР°")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Недействительный токен")
+        raise HTTPException(status_code=401, detail="РќРµРґРµР№СЃС‚РІРёС‚РµР»СЊРЅС‹Р№ С‚РѕРєРµРЅ")
 
 
 # ----------------------------------------------------------------------------
@@ -120,12 +120,12 @@ class Color(BaseModel):
 
 class ProductBase(BaseModel):
     name: str
-    category: str  # 'sneakers' | 'tshirts' | 'crossfit'
-    subcategory: Optional[str] = None  # sneakers: 'running' | 'crossfit' | 'daily'
+    category: str  # 'sneakers' | 'tshirts' (РћРґРµР¶РґР°) | 'crossfit'
+    subcategory: Optional[str] = None  # sneakers: 'running'|'crossfit'|'daily'; tshirts (РћРґРµР¶РґР°): 'tshirts'|'shorts'|'socks'
     price: int
     images: List[str] = []
     colors: List[Color] = []  # optional per-color image galleries
-    sizes: List[Any] = []  # mixed: numbers (39..46) or strings ('S','M','Единый')
+    sizes: List[Any] = []  # mixed: numbers (39..46) or strings ('S','M','Р•РґРёРЅС‹Р№')
     status: str = "available"  # 'available' | 'pre-order'
     description: str = ""
 
@@ -175,18 +175,36 @@ class OrderCreate(BaseModel):
     items: List[OrderItem]
     total: int
     telegram_username: Optional[str] = ""
+    customer_name: Optional[str] = ""
+    customer_phone: Optional[str] = ""
+    comment: Optional[str] = ""
+
+
+# CRM statuses. 'sold' is the only status that counts towards revenue.
+ORDER_STATUSES = ["new", "contacted", "sold", "canceled"]
+# Legacy values that used to mean "sold" in older builds.
+SOLD_STATUSES = ["sold", "done", "completed", "Completed", "РІС‹РїРѕР»РЅРµРЅ", "Р’С‹РїРѕР»РЅРµРЅ"]
 
 
 class Order(OrderCreate):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    status: str = "new"  # new | contacted | done
+    status: str = "new"  # new | contacted | sold | canceled
+    manager_note: Optional[str] = ""
+    sold_at: Optional[str] = None
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    updated_at: Optional[str] = None
 
 
 class OrderStatusUpdate(BaseModel):
-    status: str
+    """Partial CRM update: status and/or client card fields."""
+
+    status: Optional[str] = None
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    telegram_username: Optional[str] = None
+    manager_note: Optional[str] = None
 
 
 class CartEvent(BaseModel):
@@ -210,7 +228,7 @@ async def root():
 async def login(body: LoginRequest):
     settings = await db.admin_settings.find_one({"key": "admin"}, {"_id": 0})
     if not settings or not verify_password(body.password, settings["password_hash"]):
-        raise HTTPException(status_code=401, detail="Неверный пароль")
+        raise HTTPException(status_code=401, detail="РќРµРІРµСЂРЅС‹Р№ РїР°СЂРѕР»СЊ")
     return {"token": create_access_token(), "token_type": "bearer"}
 
 
@@ -272,7 +290,28 @@ async def list_orders(admin: dict = Depends(require_admin)):
 async def update_order(
     order_id: str, body: OrderStatusUpdate, admin: dict = Depends(require_admin)
 ):
-    res = await db.orders.update_one({"id": order_id}, {"$set": {"status": body.status}})
+    updates: Dict[str, Any] = {}
+
+    if body.status is not None:
+        if body.status not in ORDER_STATUSES:
+            raise HTTPException(status_code=400, detail="РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ СЃС‚Р°С‚СѓСЃ Р·Р°РєР°Р·Р°")
+        updates["status"] = body.status
+        # Revenue is driven by 'sold': stamp / clear the sale date accordingly.
+        updates["sold_at"] = (
+            datetime.now(timezone.utc).isoformat() if body.status == "sold" else None
+        )
+
+    for field in ("customer_name", "customer_phone", "telegram_username", "manager_note"):
+        value = getattr(body, field)
+        if value is not None:
+            updates[field] = value.strip()
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="РќРµС‡РµРіРѕ РѕР±РЅРѕРІР»СЏС‚СЊ")
+
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    res = await db.orders.update_one({"id": order_id}, {"$set": updates})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
@@ -299,17 +338,59 @@ async def log_cart_event(body: CartEvent):
 
 @api_router.get("/stats")
 async def get_stats(admin: dict = Depends(require_admin)):
+    """CRM dashboard numbers. Revenue = sum of totals of orders with status 'sold'."""
     products_count = await db.products.count_documents({})
     orders_count = await db.orders.count_documents({})
-    new_orders = await db.orders.count_documents({"status": "new"})
     add_to_cart = await db.cart_events.count_documents({})
-    revenue_docs = await db.orders.find({"status": {"$in": ["completed", "Completed", "выполнен", "Выполнен"]}}, {"_id": 0, "total_price": 1}).to_list(1000)
-    revenue = sum(int(d.get("total_price", 0)) for d in revenue_docs)
+
+    by_status: Dict[str, int] = {}
+    for status in ORDER_STATUSES:
+        query = {"status": {"$in": SOLD_STATUSES}} if status == "sold" else {"status": status}
+        by_status[status] = await db.orders.count_documents(query)
+
+    sold_docs = await db.orders.find(
+        {"status": {"$in": SOLD_STATUSES}},
+        {"_id": 0, "total": 1, "sold_at": 1, "created_at": 1},
+    ).to_list(5000)
+
+    def order_total(doc: dict) -> int:
+        try:
+            return int(doc.get("total") or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    revenue = sum(order_total(d) for d in sold_docs)
+    sold_count = len(sold_docs)
+
+    now = datetime.now(timezone.utc)
+    month_prefix = now.strftime("%Y-%m")
+    today_prefix = now.strftime("%Y-%m-%d")
+    revenue_month = sum(
+        order_total(d)
+        for d in sold_docs
+        if str(d.get("sold_at") or d.get("created_at") or "").startswith(month_prefix)
+    )
+    revenue_today = sum(
+        order_total(d)
+        for d in sold_docs
+        if str(d.get("sold_at") or d.get("created_at") or "").startswith(today_prefix)
+    )
+
+    avg_check = int(revenue / sold_count) if sold_count else 0
+    conversion = round(sold_count / orders_count * 100, 1) if orders_count else 0.0
+
     return {
         "products": products_count,
         "orders": orders_count,
-        "new_orders": new_orders,
+        "new_orders": by_status.get("new", 0),
+        "contacted_orders": by_status.get("contacted", 0),
+        "sold_orders": sold_count,
+        "canceled_orders": by_status.get("canceled", 0),
         "revenue": revenue,
+        "revenue_month": revenue_month,
+        "revenue_today": revenue_today,
+        "avg_check": avg_check,
+        "conversion": conversion,
         "add_to_cart": add_to_cart,
     }
 
@@ -370,7 +451,7 @@ async def delete_product(product_id: str, admin: dict = Depends(require_admin)):
 
 
 # ----------------------------------------------------------------------------
-# Routes: image upload (Cloudinary) — admin only
+# Routes: image upload (Cloudinary) вЂ” admin only
 # ----------------------------------------------------------------------------
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024  # 8 MB
@@ -383,14 +464,14 @@ async def upload_image(
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=400,
-            detail="Недопустимый формат. Разрешены: JPEG, PNG, WEBP, GIF",
+            detail="РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ С„РѕСЂРјР°С‚. Р Р°Р·СЂРµС€РµРЅС‹: JPEG, PNG, WEBP, GIF",
         )
 
     contents = await file.read()
     if len(contents) > MAX_UPLOAD_BYTES:
         raise HTTPException(
             status_code=400,
-            detail="Файл слишком большой. Максимум 8 МБ.",
+            detail="Р¤Р°Р№Р» СЃР»РёС€РєРѕРј Р±РѕР»СЊС€РѕР№. РњР°РєСЃРёРјСѓРј 8 РњР‘.",
         )
 
     try:
@@ -399,7 +480,7 @@ async def upload_image(
         )
     except Exception as e:
         logger.error("Cloudinary upload failed: %s", e)
-        raise HTTPException(status_code=502, detail="Не удалось загрузить изображение")
+        raise HTTPException(status_code=502, detail="РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ")
 
     return {"url": result["secure_url"], "secure_url": result["secure_url"]}
 
@@ -410,7 +491,7 @@ async def upload_image(
 SEED_PRODUCTS = [
     {
         "id": "1",
-        "name": "RepX Training Кроссовки",
+        "name": "RepX Training РљСЂРѕСЃСЃРѕРІРєРё",
         "category": "sneakers",
         "subcategory": "crossfit",
         "price": 850000,
@@ -420,105 +501,108 @@ SEED_PRODUCTS = [
         ],
         "sizes": [39, 40, 41, 42, 43, 44, 45],
         "status": "available",
-        "description": "Профессиональные тренировочные кроссовки RepX для максимальной производительности.",
+        "description": "РџСЂРѕС„РµСЃСЃРёРѕРЅР°Р»СЊРЅС‹Рµ С‚СЂРµРЅРёСЂРѕРІРѕС‡РЅС‹Рµ РєСЂРѕСЃСЃРѕРІРєРё RepX РґР»СЏ РјР°РєСЃРёРјР°Р»СЊРЅРѕР№ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё.",
     },
     {
         "id": "2",
-        "name": "RepX Pro Кроссовки",
+        "name": "RepX Pro РљСЂРѕСЃСЃРѕРІРєРё",
         "category": "sneakers",
         "subcategory": "running",
         "price": 950000,
         "images": ["https://images.unsplash.com/photo-1605348532760-6753d2c43329?w=800"],
         "sizes": [39, 40, 41, 42, 43, 44],
         "status": "available",
-        "description": "Премиальная модель для бега. Инновационная амортизация и дышащий материал.",
+        "description": "РџСЂРµРјРёР°Р»СЊРЅР°СЏ РјРѕРґРµР»СЊ РґР»СЏ Р±РµРіР°. РРЅРЅРѕРІР°С†РёРѕРЅРЅР°СЏ Р°РјРѕСЂС‚РёР·Р°С†РёСЏ Рё РґС‹С€Р°С‰РёР№ РјР°С‚РµСЂРёР°Р».",
     },
     {
         "id": "5",
-        "name": "RepX Elite Кроссовки",
+        "name": "RepX Elite РљСЂРѕСЃСЃРѕРІРєРё",
         "category": "sneakers",
         "subcategory": "daily",
         "price": 1100000,
         "images": ["https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800"],
         "sizes": [40, 41, 42, 43, 44, 45],
         "status": "available",
-        "description": "Топовая модель линейки RepX. Максимальный комфорт и стиль на каждый день.",
+        "description": "РўРѕРїРѕРІР°СЏ РјРѕРґРµР»СЊ Р»РёРЅРµР№РєРё RepX. РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РєРѕРјС„РѕСЂС‚ Рё СЃС‚РёР»СЊ РЅР° РєР°Р¶РґС‹Р№ РґРµРЅСЊ.",
     },
     {
         "id": "3",
-        "name": "RepX Classic Футболка",
+        "name": "RepX Classic Р¤СѓС‚Р±РѕР»РєР°",
         "category": "tshirts",
+        "subcategory": "tshirts",
         "price": 250000,
         "images": [
             "https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png"
         ],
         "sizes": ["S", "M", "L", "XL", "XXL"],
         "status": "available",
-        "description": "Классическая футболка RepX из премиального хлопка.",
+        "description": "РљР»Р°СЃСЃРёС‡РµСЃРєР°СЏ С„СѓС‚Р±РѕР»РєР° RepX РёР· РїСЂРµРјРёР°Р»СЊРЅРѕРіРѕ С…Р»РѕРїРєР°.",
     },
     {
         "id": "4",
-        "name": "RepX Performance Футболка",
+        "name": "RepX Performance Р¤СѓС‚Р±РѕР»РєР°",
         "category": "tshirts",
+        "subcategory": "tshirts",
         "price": 280000,
         "images": [
             "https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png"
         ],
         "sizes": ["S", "M", "L", "XL"],
         "status": "pre-order",
-        "description": "Технологичная футболка с влагоотводящей тканью для интенсивных тренировок.",
+        "description": "РўРµС…РЅРѕР»РѕРіРёС‡РЅР°СЏ С„СѓС‚Р±РѕР»РєР° СЃ РІР»Р°РіРѕРѕС‚РІРѕРґСЏС‰РµР№ С‚РєР°РЅСЊСЋ РґР»СЏ РёРЅС‚РµРЅСЃРёРІРЅС‹С… С‚СЂРµРЅРёСЂРѕРІРѕРє.",
     },
     {
         "id": "6",
-        "name": "RepX ONE MORE Футболка",
+        "name": "RepX ONE MORE Р¤СѓС‚Р±РѕР»РєР°",
         "category": "tshirts",
+        "subcategory": "tshirts",
         "price": 300000,
         "images": [
             "https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png"
         ],
         "sizes": ["S", "M", "L", "XL", "XXL"],
         "status": "available",
-        "description": "Лимитированная футболка с фирменным слоганом ONE MORE.",
+        "description": "Р›РёРјРёС‚РёСЂРѕРІР°РЅРЅР°СЏ С„СѓС‚Р±РѕР»РєР° СЃ С„РёСЂРјРµРЅРЅС‹Рј СЃР»РѕРіР°РЅРѕРј ONE MORE.",
     },
     {
         "id": "7",
-        "name": "RepX Скакалка Speed",
+        "name": "RepX РЎРєР°РєР°Р»РєР° Speed",
         "category": "crossfit",
         "price": 180000,
         "images": ["https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=800"],
-        "sizes": ["Единый"],
+        "sizes": ["Р•РґРёРЅС‹Р№"],
         "status": "available",
-        "description": "Скоростная скакалка RepX с подшипниками. Идеальна для double-unders.",
+        "description": "РЎРєРѕСЂРѕСЃС‚РЅР°СЏ СЃРєР°РєР°Р»РєР° RepX СЃ РїРѕРґС€РёРїРЅРёРєР°РјРё. РРґРµР°Р»СЊРЅР° РґР»СЏ double-unders.",
     },
     {
         "id": "8",
-        "name": "RepX Наколенники",
+        "name": "RepX РќР°РєРѕР»РµРЅРЅРёРєРё",
         "category": "crossfit",
         "price": 220000,
         "images": ["https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=800"],
         "sizes": ["S", "M", "L", "XL"],
         "status": "available",
-        "description": "Компрессионные наколенники 7 мм для тяжёлых приседаний.",
+        "description": "РљРѕРјРїСЂРµСЃСЃРёРѕРЅРЅС‹Рµ РЅР°РєРѕР»РµРЅРЅРёРєРё 7 РјРј РґР»СЏ С‚СЏР¶С‘Р»С‹С… РїСЂРёСЃРµРґР°РЅРёР№.",
     },
     {
         "id": "9",
-        "name": "RepX Накладки для рук",
+        "name": "RepX РќР°РєР»Р°РґРєРё РґР»СЏ СЂСѓРє",
         "category": "crossfit",
         "price": 150000,
         "images": ["https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800"],
         "sizes": ["S", "M", "L"],
         "status": "available",
-        "description": "Кожаные накладки (grips) для защиты ладоней на турнике и кольцах.",
+        "description": "РљРѕР¶Р°РЅС‹Рµ РЅР°РєР»Р°РґРєРё (grips) РґР»СЏ Р·Р°С‰РёС‚С‹ Р»Р°РґРѕРЅРµР№ РЅР° С‚СѓСЂРЅРёРєРµ Рё РєРѕР»СЊС†Р°С….",
     },
     {
         "id": "10",
-        "name": "RepX Пояс атлетический",
+        "name": "RepX РџРѕСЏСЃ Р°С‚Р»РµС‚РёС‡РµСЃРєРёР№",
         "category": "crossfit",
         "price": 350000,
         "images": ["https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=800"],
         "sizes": ["M", "L", "XL"],
         "status": "pre-order",
-        "description": "Тяжелоатлетический пояс RepX из натуральной кожи.",
+        "description": "РўСЏР¶РµР»РѕР°С‚Р»РµС‚РёС‡РµСЃРєРёР№ РїРѕСЏСЃ RepX РёР· РЅР°С‚СѓСЂР°Р»СЊРЅРѕР№ РєРѕР¶Рё.",
     },
 ]
 
@@ -551,7 +635,7 @@ async def seed_database():
         await db.products.insert_many(docs)
         logger.info("Seeded %d products", len(docs))
     else:
-        logger.info("Products already present (%d) — skipping seed", count)
+        logger.info("Products already present (%d) вЂ” skipping seed", count)
 
 
 # ----------------------------------------------------------------------------
