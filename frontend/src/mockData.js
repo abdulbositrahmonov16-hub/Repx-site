@@ -34,6 +34,7 @@ export const products = [
     id: '3',
     name: 'RepX Classic Футболка',
     category: 'tshirts',
+    subcategory: 'tshirts',
     price: 250000,
     images: [
       'https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png',
@@ -47,6 +48,7 @@ export const products = [
     id: '4',
     name: 'RepX Performance Футболка',
     category: 'tshirts',
+    subcategory: 'tshirts',
     price: 280000,
     images: [
       'https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png',
@@ -74,6 +76,7 @@ export const products = [
     id: '6',
     name: 'RepX ONE MORE Футболка',
     category: 'tshirts',
+    subcategory: 'tshirts',
     price: 300000,
     images: [
       'https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png'
@@ -136,7 +139,7 @@ export const products = [
 export const categoryFilters = [
   { id: 'all', label: 'ВСЕ' },
   { id: 'sneakers', label: 'КРОССОВКИ' },
-  { id: 'tshirts', label: 'ФУТБОЛКИ' },
+  { id: 'tshirts', label: 'ОДЕЖДА' },
   { id: 'crossfit', label: 'FOR CROSSFIT' }
 ];
 
@@ -147,12 +150,24 @@ export const sneakerSubcategories = [
   { id: 'daily', label: 'DAILY' }
 ];
 
+export const clothingSubcategories = [
+  { id: 'all', label: 'ВСЕ' },
+  { id: 'tshirts', label: 'ФУТБОЛКИ' },
+  { id: 'shorts', label: 'ШОРТЫ' },
+  { id: 'socks', label: 'НОСКИ' }
+];
+
+export const getSubcategoryLabel = (category, sub) => {
+  const list = category === 'sneakers' ? sneakerSubcategories : clothingSubcategories;
+  return list.find((s) => s.id === sub)?.label || '';
+};
+
 export const getCategoryLabel = (category) => {
   switch (category) {
     case 'sneakers':
       return 'Кроссовки';
     case 'tshirts':
-      return 'Футболка';
+      return 'Одежда';
     case 'crossfit':
       return 'Для кроссфита';
     default:
