@@ -15,6 +15,13 @@ export const updateOrderStatus = async (id, status) => {
   return data;
 };
 
+// Partial CRM update: any of status, customer_name, customer_phone,
+// telegram_username, manager_note.
+export const updateOrder = async (id, patch) => {
+  const { data } = await api.patch(`/orders/${id}`, patch);
+  return data;
+};
+
 export const deleteOrder = async (id) => {
   const { data } = await api.delete(`/orders/${id}`);
   return data;
