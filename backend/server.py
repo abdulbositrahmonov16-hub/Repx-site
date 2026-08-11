@@ -126,8 +126,9 @@ class ProductBase(BaseModel):
     images: List[str] = []
     colors: List[Color] = []  # optional per-color image galleries
     sizes: List[Any] = []  # mixed: numbers (39..46) or strings ('S','M','Единый')
-    status: str = "available"  # 'available' | 'pre-order'
+   status: str = "available"  # 'available' | 'pre-order'
     description: str = ""
+    sizeChart: Optional[str] = None  # URL to size chart image, shown on product page
 
 
 class Product(ProductBase):
@@ -149,8 +150,9 @@ class ProductUpdate(BaseModel):
     images: Optional[List[str]] = None
     colors: Optional[List[Color]] = None
     sizes: Optional[List[Any]] = None
-    status: Optional[str] = None
+   status: Optional[str] = None
     description: Optional[str] = None
+    sizeChart: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
