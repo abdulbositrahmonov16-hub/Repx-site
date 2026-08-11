@@ -62,6 +62,7 @@ const AdminPanel = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [uploadingIndex, setUploadingIndex] = useState(null);
   const [uploadingColor, setUploadingColor] = useState(null);
+  const [uploadingSizeChart, setUploadingSizeChart] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     category: 'sneakers',
@@ -183,6 +184,7 @@ const AdminPanel = () => {
           (product.category === 'sneakers' ? 'running' : product.category === 'tshirts' ? 'tshirts' : ''),
         price: product.price.toString(),
         images: product.images,
+        sizeChart: product.sizeChart || '',
         colors: product.colors || [],
         sizes: product.sizes,
         status: product.status,
@@ -199,7 +201,8 @@ const AdminPanel = () => {
         colors: [],
         sizes: [],
         status: 'available',
-        description: ''
+        description: '',
+        sizeChart: ''
       });
     }
     setIsModalOpen(true);
@@ -235,7 +238,8 @@ const AdminPanel = () => {
       colors: colorsClean,
       sizes: formData.sizes,
       status: formData.status,
-      description: formData.description
+      description: formData.description,
+      sizeChart: formData.sizeChart || null
     };
     if (formData.category === 'sneakers' || formData.category === 'tshirts') {
       productData.subcategory =
@@ -308,6 +312,19 @@ const AdminPanel = () => {
     }
   };
 
+  const handleSizeChartUpload = async (file) => {
+    if (!file) return;
+    setUploadingSizeChart(true);
+    try {
+      const url = await uploadImage(file);
+      setFormData((f) => ({ ...f, sizeChart: url }));
+      toast.success('Таблица размеров загружена!');
+    } catch (err) {
+      toast.error(apiError(err));
+    } finally {
+      setUploadingSizeChart(false);
+    }
+  };
   const handleSizeToggle = (size) => {
     const newSizes = formData.sizes.includes(size)
       ? formData.sizes.filter((s) => s !== size)
@@ -1125,8 +1142,51 @@ const AdminPanel = () => {
                             }`}
                           >
                             {size}
-                          </button>
+                         </button>
                         ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Таблица размеров (необязательно)</label>
+                      <p className="text-xs text-black/40 mb-3">Покажется на странице товара под размерами, клиент сможет открыть её в полный экран</p>
+                      <div className="flex gap-3 items-center">
+                        <div className="w-20 h-20 flex-shrink-0 rounded-lg bg-neutral-100 overflow-hidden border border-black/10 flex items-center justify-center">
+                          {uploadingSizeChart ? (
+                            <Loader2 className="w-6 h-6 text-[#8A7548] animate-spin" />
+                          ) : formData.sizeChart ? (
+                            <img src={formData.sizeChart} alt="size chart preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <Upload className="w-6 h-6 text-black/20" />
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <label className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-black/15 text-sm font-medium text-black/70 hover:border-[#BFA982] hover:text-[#8A7548] cursor-pointer transition-colors">
+                            <Upload className="w-4 h-4" />
+                            Загрузить таблицу
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                handleSizeChartUpload(e.target.files[0]);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          <input
+                            type="url"
+                            value={formData.sizeChart && formData.sizeChart.startsWith('data:') ? '' : (formData.sizeChart || '')}
+                            onChange={(e) => setFormData({ ...formData, sizeChart: e.target.value })}
+                            placeholder="или вставьте ссылку https://..."
+                            className="w-full px-4 py-2 rounded-lg border border-black/10 focus:border-[#BFA982] focus:ring-1 focus:ring-[#BFA982] outline-none transition-colors text-sm"
+                          />
+                        </div>
+                        {formData.sizeChart && (
+                          <button type="button" onClick={() => setFormData({ ...formData, sizeChart: '' })} className="p-2 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors flex-shrink-0">
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
