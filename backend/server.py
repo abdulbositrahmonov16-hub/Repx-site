@@ -150,7 +150,7 @@ class ProductUpdate(BaseModel):
     images: Optional[List[str]] = None
     colors: Optional[List[Color]] = None
     sizes: Optional[List[Any]] = None
-   status: Optional[str] = None
+    status: Optional[str] = None
     description: Optional[str] = None
     sizeChart: Optional[str] = None
 
