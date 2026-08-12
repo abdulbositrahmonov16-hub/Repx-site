@@ -8,7 +8,7 @@ import { logAddToCart } from '../utils/orders';
 import { formatPrice, addToCart } from '../utils/cart';
 import { useLang } from '../context/LanguageContext';
 import { toast } from 'sonner';
-
+import { Helmet } from 'react-helmet-async';
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -53,6 +53,11 @@ const ProductDetail = () => {
 
   if (!product) return null;
 
+  const pageTitle = `${product.name} — купить в Ташкенте | RepX`;
+  const pageDescription = product.description
+    ? product.description.slice(0, 155)
+    : `${product.name} в интернет-магазине RepX. ${formatPrice(product.price)}. Доставка по Ташкенту.`;
+
   const colors = product.colors || [];
   const hasColors = colors.length > 0;
   const gallery = hasColors ? (colors[colorIdx]?.images || []) : (product.images || []);
@@ -90,6 +95,10 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen bg-white pt-24 md:pt-28 pb-32 md:pb-20">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <motion.button
           initial={{ opacity: 0, x: -20 }}
