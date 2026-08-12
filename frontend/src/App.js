@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { HelmetProvider, Helmet } from "react-helmet-async";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -39,7 +40,12 @@ function App() {
   }, []);
 
   return (
-    <LanguageProvider>
+    <HelmetProvider>
+      <Helmet>
+        <title>REPX UZ — Магазин товаров для кроссфита</title>
+        <meta name="description" content="RepX — интернет-магазин кроссовок и одежды для кроссфита и бега в Ташкенте." />
+      </Helmet>
+      <LanguageProvider>
       <div className="App pb-20 md:pb-0">
         <BrowserRouter>
           <ScrollToTop />
@@ -62,8 +68,9 @@ function App() {
           <Toaster position="top-center" richColors />
         </BrowserRouter>
       </div>
-    </LanguageProvider>
+      </LanguageProvider>
+    </HelmetProvider>
   );
-}
+  }
 
 export default App;
