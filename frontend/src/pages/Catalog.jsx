@@ -7,6 +7,7 @@ import { apiError } from '../utils/api';
 import { fetchProducts } from '../utils/products';
 import { formatPrice } from '../utils/cart';
 import { useLang } from '../context/LanguageContext';
+import { Helmet } from 'react-helmet-async';
 
 const CATALOG_HERO = 'https://customer-assets-gfyr7b9c.emergentagent.net/job_repx-shop/artifacts/rgk7kivn_IMG_20260803_125419_953.jpg';
 
@@ -92,6 +93,10 @@ const Catalog = () => {
 
   return (
     <div className="min-h-screen bg-white pb-24">
+      <Helmet>
+        <title>Каталог — Кроссовки и одежда для кроссфита | RepX</title>
+        <meta name="description" content="Каталог RepX: кроссовки, футболки, шорты и экипировка для кроссфита и бега. Доставка по Ташкенту." />
+      </Helmet>
       {/* HERO — modern take: shorter, deeper gradient, geometric sans, subtle grain */}
       <section
         data-testid="catalog-hero"
