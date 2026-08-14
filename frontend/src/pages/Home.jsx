@@ -27,7 +27,7 @@ const Hero = () => {
         <div 
           className="w-full h-full bg-cover bg-center"
           style={{ 
-            backgroundImage: 'url(https://res.cloudinary.com/wjivyabh/image/upload/v1786702902/repx_store/annowuuwyg98eiz92wsv.jpg)',
+            backgroundImage: 'url(https://res.cloudinary.com/wjivyabh/image/upload/v1786704974/repx_store/oonvonymy2efohogqd5c.jpg)',
             filter: 'brightness(0.85)'
           }}
         />
