@@ -68,6 +68,8 @@ const AdminPanel = () => {
     category: 'sneakers',
     subcategory: 'running',
     price: '',
+    oldPrice: '',
+    onSale: false,
     images: [''],
     colors: [],
     sizes: [],
@@ -183,6 +185,8 @@ const AdminPanel = () => {
           product.subcategory ||
           (product.category === 'sneakers' ? 'running' : product.category === 'tshirts' ? 'tshirts' : ''),
         price: product.price.toString(),
+        oldPrice: product.oldPrice ? product.oldPrice.toString() : '',
+        onSale: product.onSale || false,
         images: product.images,
         sizeChart: product.sizeChart || '',
         colors: product.colors || [],
@@ -197,6 +201,8 @@ const AdminPanel = () => {
         category: 'sneakers',
         subcategory: 'running',
         price: '',
+        oldPrice: '',
+        onSale: false,
         images: [''],
         colors: [],
         sizes: [],
@@ -234,6 +240,8 @@ const AdminPanel = () => {
       name: formData.name,
       category: formData.category,
       price: parseInt(formData.price),
+      oldPrice: formData.onSale && formData.oldPrice ? parseInt(formData.oldPrice) : null,
+      onSale: !!formData.onSale,
       images: baseImages.length ? baseImages : (colorsClean[0]?.images || []),
       colors: colorsClean,
       sizes: formData.sizes,
@@ -1014,6 +1022,30 @@ const AdminPanel = () => {
                         className="w-full px-4 py-2 rounded-lg border border-black/10 focus:border-[#BFA982] focus:ring-1 focus:ring-[#BFA982] outline-none transition-colors"
                         required
                       />
+                    </div>
+
+                    <div className="rounded-lg border border-black/10 p-4 space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.onSale}
+                          onChange={(e) => setFormData({ ...formData, onSale: e.target.checked })}
+                          className="w-4 h-4 accent-[#BFA982]"
+                        />
+                        <span className="text-sm font-medium">Показать как акцию 🔥</span>
+                      </label>
+                      {formData.onSale && (
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Старая цена (сум)</label>
+                          <p className="text-xs text-black/40 mb-2">Будет показана зачёркнутой рядом с текущей ценой</p>
+                          <input
+                            type="number"
+                            value={formData.oldPrice}
+                            onChange={(e) => setFormData({ ...formData, oldPrice: e.target.value })}
+                            className="w-full px-4 py-2 rounded-lg border border-black/10 focus:border-[#BFA982] focus:ring-1 focus:ring-[#BFA982] outline-none transition-colors"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div>
