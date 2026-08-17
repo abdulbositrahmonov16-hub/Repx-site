@@ -129,6 +129,8 @@ class ProductBase(BaseModel):
     status: str = "available"  # 'available' | 'pre-order'
     description: str = ""
     sizeChart: Optional[str] = None  # URL to size chart image, shown on product page
+    oldPrice: Optional[int] = None  # original price, shown crossed-out when onSale is true
+    onSale: bool = False
 
 
 class Product(ProductBase):
@@ -153,6 +155,8 @@ class ProductUpdate(BaseModel):
     status: Optional[str] = None
     description: Optional[str] = None
     sizeChart: Optional[str] = None
+    oldPrice: Optional[int] = None
+    onSale: Optional[bool] = None
 
 
 class LoginRequest(BaseModel):
