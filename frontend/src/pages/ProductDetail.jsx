@@ -133,7 +133,12 @@ const ProductDetail = () => {
                   className="w-full h-full object-cover"
                 />
               </AnimatePresence>
-              <div className="absolute top-4 left-4">
+              <div className="absolute top-4 left-4 flex flex-col gap-1.5">
+                {product.onSale && (
+                  <span className="inline-block px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] font-bold bg-[#BFA982] text-black">
+                    🔥 Акция
+                  </span>
+                )}
                 <span
                   className={`inline-block px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] font-medium border backdrop-blur-md ${
                     product.status === 'available'
@@ -181,9 +186,16 @@ const ProductDetail = () => {
               <h1 className="font-display font-extrabold tracking-[-0.035em] text-4xl md:text-5xl lg:text-6xl leading-[0.95] mb-4">
                 {product.name}
               </h1>
-              <p className="font-['Anton'] text-3xl md:text-4xl tracking-wide text-[#8A7548]">
-                {formatPrice(product.price)}
-              </p>
+              <div className="flex items-baseline gap-3">
+                <p className="font-['Anton'] text-3xl md:text-4xl tracking-wide text-[#8A7548]">
+                  {formatPrice(product.price)}
+                </p>
+                {product.onSale && product.oldPrice && (
+                  <p className="text-lg text-black/40 line-through">
+                    {formatPrice(product.oldPrice)}
+                  </p>
+                )}
+              </div>
             </div>
 
             {product.status === 'pre-order' && (
