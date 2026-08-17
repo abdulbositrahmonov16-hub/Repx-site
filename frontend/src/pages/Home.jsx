@@ -88,10 +88,9 @@ const Marquee = () => {
 };
 
 const DEFAULT_HOME_IMAGES = {
-  sneakers: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
-  tshirts:
-    'https://customer-assets-4nw71qhi.emergentagent.net/job_c7a5e226-fc31-497c-bd5e-320bedc19cc3/artifacts/bn79a0oy_IMG_20260729_162355_183.png',
-  crossfit: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
+  sneakers: 'https://res.cloudinary.com/wjivyabh/image/upload/v1786949716/repx_store/ygxe1kwvdxbduvbglfky.jpg',
+  tshirts: 'https://res.cloudinary.com/wjivyabh/image/upload/v1786949751/repx_store/bwemmxrnw5ejqhczgbtb.jpg',
+  crossfit: 'https://res.cloudinary.com/wjivyabh/image/upload/v1786949775/repx_store/nktg6xooqymfe4yfahl1.jpg',
 };
 
 const FeaturedProducts = () => {
