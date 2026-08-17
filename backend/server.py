@@ -62,7 +62,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # ----------------------------------------------------------------------------
 # App & router
 # ----------------------------------------------------------------------------
-app = FastAPI(title="RepX Store API")
+app = FastAPI(title="RepX Store API", docs_url=None, redoc_url=None, openapi_url=None)
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
 
