@@ -255,6 +255,11 @@ const Catalog = () => {
 
                   {/* Status pill — thin outline, no gold fill */}
                   <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                    {product.onSale && (
+                      <span className="inline-block px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] font-bold bg-[#BFA982] text-black">
+                        🔥 Акция
+                      </span>
+                    )}
                     <span
                       className={`inline-block px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border backdrop-blur-md ${
                         product.status === 'available'
@@ -297,11 +302,16 @@ const Catalog = () => {
       {categoryLabel(product.category)}
     </p>
 
-  <div className="mt-2 pt-1.5 border-t border-zinc-100">
+  <div className="mt-2 pt-1.5 border-t border-zinc-100 flex items-baseline gap-2">
     <p className="font-['Anton'] text-base font-black text-black tracking-wide">
       {formatPrice(product.price)}
     </p>
-  </div> 
+    {product.onSale && product.oldPrice && (
+      <p className="text-xs text-zinc-400 line-through">
+        {formatPrice(product.oldPrice)}
+      </p>
+    )}
+  </div>
                 </div>
 
               </motion.div>
